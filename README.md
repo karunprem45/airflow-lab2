@@ -1,6 +1,6 @@
 # Airflow Lab 2: Multi-Model Training Pipeline with a Quality Gate
 
-**Author:** Karuniya Premnath ([@karunprem45](https://github.com/karunprem45))
+**Author:** Karuniya Premnath ([@karunprem45](https://github.com/karunprem45))<br>
 **Course:** IE7374 MLOps, Northeastern University, Fall 2026
 
 This is my version of [MLOps Airflow Lab 2](https://github.com/raminmohammadi/MLOps/tree/main/Labs/Airflow_Labs/Lab_2).
