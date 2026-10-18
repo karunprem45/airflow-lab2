@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Success | MLOps Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --success-green: #10b981;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 640px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            text-align: center;
+            border-top: 8px solid var(--success-green);
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: #ecfdf5;
+            color: var(--success-green);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+        h1 { margin: 0 0 10px; font-weight: 600; color: var(--text-main); }
+        p { color: var(--text-muted); margin-bottom: 30px; }
+        
+        .metadata-grid {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .meta-label { font-weight: 600; color: var(--text-muted); }
+        .meta-value { color: var(--text-main); font-family: monospace; }
+
+        .section-title { text-align: left; font-weight: 600; margin: 0 0 10px; font-size: 15px; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .badge-ok { background: #ecfdf5; color: var(--success-green); }
+        .badge-warn { background: #fef3c7; color: #b45309; }
+        table.board { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 30px; }
+        table.board th, table.board td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        table.board th { color: var(--text-muted); font-weight: 600; }
+        table.board td.num { font-family: monospace; }
+        tr.winner td { font-weight: 600; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn-primary { background: var(--success-green); color: white; }
+        .btn-secondary { background: #e2e8f0; color: var(--text-main); }
+        .btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon-circle">✓</div>
+        <h1>Pipeline Success</h1>
+        <p>The model training and deployment cycle completed successfully.</p>
+
+        <div class="metadata-grid">
+            <div class="meta-item">
+                <span class="meta-label">Run ID</span>
+                <span class="meta-value">{{ run_id }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">State</span>
+                <span class="meta-value" style="color: var(--success-green);">{{ state }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Logical Date</span>
+                <span class="meta-value">{{ logical_date }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">System Time</span>
+                <span class="meta-value" id="current-time"></span>
+            </div>
+        </div>
+
+        <p class="section-title">Production model
+            {% if latest_promoted %}<span class="badge badge-ok">promoted by latest run</span>
+            {% else %}<span class="badge badge-warn">latest run rejected at quality gate</span>{% endif %}
+        </p>
+        <div class="metadata-grid">
+            {% if production %}
+            <div class="meta-item"><span class="meta-label">Model</span><span class="meta-value">{{ production.model_name }}</span></div>
+            <div class="meta-item"><span class="meta-label">Accuracy / F1</span><span class="meta-value">{{ production.accuracy }} / {{ production.f1 }}</span></div>
+            <div class="meta-item"><span class="meta-label">Gate threshold</span><span class="meta-value">{{ production.min_accuracy }}</span></div>
+            <div class="meta-item"><span class="meta-label">Promoted by</span><span class="meta-value">{{ production.promoted_by_run }}</span></div>
+            {% else %}
+            <div class="meta-item"><span class="meta-label">No model has passed the quality gate yet.</span></div>
+            {% endif %}
+        </div>
+
+        <p class="section-title">Leaderboard (latest training run)</p>
+        <table class="board">
+            <tr><th>#</th><th>Model</th><th>Accuracy</th><th>F1</th></tr>
+            {% for m in leaderboard.models %}
+            <tr class="{{ 'winner' if loop.first }}"><td>{{ loop.index }}</td><td>{{ m.model_name }}</td><td class="num">{{ m.accuracy }}</td><td class="num">{{ m.f1 }}</td></tr>
+            {% else %}
+            <tr><td colspan="4">No candidates trained yet.</td></tr>
+            {% endfor %}
+        </table>
+
+        <div class="btn-group">
+            <a href="http://localhost:8080" class="btn btn-primary">Open Airflow</a>
+            <button onclick="window.print()" class="btn btn-secondary">Print Report</button>
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

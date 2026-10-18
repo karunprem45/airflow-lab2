@@ -1,0 +1,12 @@
+# Airflow runtime data (recreated on every run)
+logs/
+working_data/
+model/
+config/airflow.cfg
+
+# Local settings (may contain an SMTP password)
+.env
+
+__pycache__/
+*.pyc
+.DS_Store
