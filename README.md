@@ -1,5 +1,8 @@
 # Airflow Lab 2: Multi-Model Training Pipeline with a Quality Gate
 
+**Author:** Karuniya Premnath ([@karunprem45](https://github.com/karunprem45))
+**Course:** IE7374 MLOps, Northeastern University, Fall 2026
+
 This is my version of [MLOps Airflow Lab 2](https://github.com/raminmohammadi/MLOps/tree/main/Labs/Airflow_Labs/Lab_2).
 In the original lab, one DAG trains a single logistic-regression model and then
 pushes a second DAG that serves a Flask status page.
