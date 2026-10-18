@@ -55,7 +55,7 @@ default_args = {
     on_failure_callback=dag_failure_alert,
     params={
         "min_accuracy": Param(
-            0.95,
+            0.72,
             type="number",
             minimum=0,
             maximum=1,

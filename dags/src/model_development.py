@@ -12,13 +12,15 @@ import pickle
 import shutil
 from datetime import datetime, timezone
 
+import numpy as np
 import pandas as pd
-from sklearn.compose import make_column_transformer
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 WORKING_DIR = os.getenv("LAB2_WORKING_DIR", "/opt/airflow/working_data")
 MODEL_DIR = os.getenv("LAB2_MODEL_DIR", "/opt/airflow/model")
@@ -31,15 +33,20 @@ LEADERBOARD_PATH = os.path.join(MODEL_DIR, "leaderboard.json")
 for _d in (WORKING_DIR, CANDIDATE_DIR, PRODUCTION_DIR):
     os.makedirs(_d, exist_ok=True)
 
-DROP_COLUMNS = ["Timestamp", "Clicked on Ad", "Ad Topic Line", "Country", "City"]
+# Pima Indians Diabetes dataset: predict whether a patient has diabetes.
+TARGET = "Outcome"
 NUM_COLUMNS = [
-    "Daily Time Spent on Site",
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
     "Age",
-    "Area Income",
-    "Daily Internet Usage",
-    "Male",
 ]
-TARGET = "Clicked on Ad"
+# In this dataset a 0 in these columns means "not measured", not a real value.
+ZERO_MEANS_MISSING = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
 REQUIRED_COLUMNS = NUM_COLUMNS + [TARGET]
 
 # Candidate models. The DAG creates one mapped task per key at runtime.
@@ -53,7 +60,7 @@ MODEL_FACTORIES = {
 def load_data() -> str:
     """Load the CSV and persist the raw dataframe to a pickle. Returns its path."""
     csv_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "data", "advertising.csv"
+        os.path.dirname(os.path.dirname(__file__)), "data", "diabetes.csv"
     )
     df = pd.read_csv(csv_path)
 
@@ -91,22 +98,20 @@ def validate_data(file_path: str, min_rows: int = 100) -> dict:
 
 
 def data_preprocessing(file_path: str, test_size: float = 0.3) -> str:
-    """Split, scale, and save (X_train, X_test, y_train, y_test). Returns path."""
+    """Treat impossible zeros as missing, split, impute, scale, and save. Returns path."""
     with open(file_path, "rb") as f:
         df = pickle.load(f)
 
-    X = df.drop(DROP_COLUMNS, axis=1)
+    X = df[NUM_COLUMNS].copy()
+    X[ZERO_MEANS_MISSING] = X[ZERO_MEANS_MISSING].replace(0, np.nan)
     y = df[TARGET]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=42
+        X, y, test_size=test_size, random_state=42, stratify=y
     )
 
-    ct = make_column_transformer(
-        (MinMaxScaler(), NUM_COLUMNS),
-        (StandardScaler(), NUM_COLUMNS),
-        remainder="passthrough",
-    )
+    # Fill missing values with the training-set median, then standardize.
+    ct = make_pipeline(SimpleImputer(strategy="median"), StandardScaler())
     X_train_tr = ct.fit_transform(X_train)
     X_test_tr = ct.transform(X_test)
 

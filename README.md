@@ -82,7 +82,7 @@ because the containers install the Python packages at start-up.
 
 | Param | Default | Meaning |
 |---|---|---|
-| `min_accuracy` | `0.95` | The best model must reach this test accuracy to be promoted. |
+| `min_accuracy` | `0.72` | The best model must reach this test accuracy to be promoted. |
 | `test_size` | `0.3` | Share of rows held out for testing. |
 | `models` | all three | Which candidate models to train. Each one becomes its own parallel task. |
 
@@ -93,12 +93,12 @@ because the containers install the Python packages at start-up.
 ```bash
 docker compose exec airflow-scheduler airflow dags unpause Airflow_Lab2
 
-# Promote path: default threshold 0.95
+# Promote path: default threshold 0.72
 docker compose exec airflow-scheduler airflow dags trigger Airflow_Lab2 --run-id promote_demo
 
 # Reject path: a threshold no model reaches
 docker compose exec airflow-scheduler airflow dags trigger Airflow_Lab2 --run-id reject_demo \
-  --conf '{"min_accuracy": 0.99}'
+  --conf '{"min_accuracy": 0.80}'
 ```
 
 ### 3.4 Look at the result
@@ -140,15 +140,15 @@ My leaderboard (`model/leaderboard.json`):
 
 | Model | Accuracy | F1 |
 |---|---|---|
-| logistic_regression | **0.97** | **0.9705** |
-| random_forest | 0.9533 | 0.9539 |
-| gradient_boosting | 0.9467 | 0.9477 |
+| random_forest | **0.7489** | **0.6027** |
+| logistic_regression | 0.7446 | 0.5931 |
+| gradient_boosting | 0.7446 | 0.5931 |
 
 A few seconds later, **Airflow_Lab2_Flask** runs by itself, with a run id that
 starts with `asset_triggered__`:
 
 - `log_new_model` prints the metrics carried on the Asset event:
-  `New production model published: {'model_name': 'logistic_regression', 'accuracy': 0.97, ...}`
+  `New production model published: {'model_name': 'random_forest', 'accuracy': 0.7489, ...}`
 - `serve_flask_api` starts Flask on port 5555 the first time and **keeps
   running**. That's by design: it holds one worker slot. On later runs the
   server is already up, so the task is **skipped** instead of failing.
@@ -156,7 +156,7 @@ starts with `asset_triggered__`:
 The page at http://localhost:5555 shows **Pipeline Success**, the production
 model, and the leaderboard.
 
-**Reject run (`min_accuracy: 0.99`).** `quality_gate` chooses `reject_model`.
+**Reject run (`min_accuracy: 0.80`).** `quality_gate` chooses `reject_model`.
 `promote_model` and `smoke_test_production_model` are skipped, and the run
 still succeeds. The production model is unchanged, and **no new
 `Airflow_Lab2_Flask` run is created**, because the Asset was not updated. The
@@ -181,7 +181,7 @@ showing the previous production model.
 | 10 | **Serving task** | Starting Flask a second time crashes with "port in use" | `serve_flask_api` checks `/health` first and **skips** if Flask is already up. The page re-reads model files on every request. | Repeated Asset-triggered runs are safe. |
 | 11 | **Status page** | Shows only the last run state | Also shows the production model, gate threshold, whether the latest run was promoted or rejected, and the leaderboard. Adds `/api/status` (JSON). | You can see what the pipeline decided, not just that it finished. |
 | 12 | **Setup** | Lab had no compose file; old `airflow.cfg` with LocalExecutor | Official Airflow 3.3.2 compose with: examples off, pinned packages, `working_data/` and `model/` mounted, worker port 5555 published, `.env`-based config | Anyone can reproduce it with one script. |
-
+| 13 | **Dataset & cleaning** | Advertising click data | Pima Indians Diabetes data. Zeros in Glucose, BloodPressure, SkinThickness, Insulin and BMI are treated as missing and filled with the training-set median (`SimpleImputer`); the train/test split is stratified | Shows the pipeline on a new dataset and handles a real data-quality problem |
 The ML code is still plain Python in `dags/src/model_development.py`. It
 doesn't import Airflow, so it stays separate from the orchestration.
 
@@ -198,7 +198,7 @@ airflow-lab2/
 └── dags/
     ├── main.py                # DAG Airflow_Lab2: training pipeline
     ├── Flask_API.py           # DAG Airflow_Lab2_Flask: Asset-scheduled status page
-    ├── data/advertising.csv   # dataset (1000 rows, target "Clicked on Ad")
+    ├── data/advertising.csv   # dataset (768 rows, target "Clicked on Ad")
     ├── src/
     │   ├── model_development.py  # load / validate / preprocess / train / select / promote
     │   └── lab2_common.py        # shared Asset + callbacks
