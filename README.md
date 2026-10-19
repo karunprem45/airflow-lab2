@@ -30,7 +30,7 @@ The whole stack runs in Docker, so the only thing you need to install is Docker.
 | Tool | Version used | Notes |
 |---|---|---|
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) (macOS / Windows) or Docker Engine (Linux) | Docker 29.6, Compose v5.3 | Any Docker with `docker compose` (Compose v2+) works. Give Docker **at least 4 GB of memory** (Docker Desktop → Settings → Resources). |
-| git | any | Only needed to clone this repo. |
+| git | any | Only needed to clone this repo. macOS: run `xcode-select --install`. Windows: [git-scm.com](https://git-scm.com/download/win). No git? On GitHub click **Code → Download ZIP**, unzip it, and `cd` into the `airflow-lab2-main` folder instead. |
 
 You do **not** need Python or Airflow on your machine. These run inside the containers:
 
@@ -49,10 +49,12 @@ Ports **8080** (Airflow UI) and **5555** (Flask status page) must be free.
 ## 2. Set up
 
 ```bash
-git clone <this-repo-url> airflow-lab2
+git clone https://github.com/karunprem45/airflow-lab2.git
 cd airflow-lab2
 ./setup.sh
 ```
+
+If `./setup.sh` says `permission denied`, run `bash setup.sh` instead.
 
 `setup.sh` does three things:
 
