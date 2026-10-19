@@ -6,7 +6,7 @@ Airflow_Lab2 - model training pipeline with a model-selection quality gate.
         -> train_candidate x N  (dynamic task mapping, runs in parallel)
         -> select_best
         -> quality_gate (branch) --> promote_model --> smoke_test_production_model
-                                 \-> reject_model
+                                 +-> reject_model
         -> pipeline_summary
 
 promote_model publishes PRODUCTION_MODEL_ASSET, which schedules the
